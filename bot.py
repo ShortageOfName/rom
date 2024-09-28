@@ -3,7 +3,6 @@ import subprocess
 import os
 from telethon import TelegramClient, events, Button
 
-# File to store user data
 USER_DATA_FILE = 'users.txt'
 
 Apid = 22157690
@@ -13,7 +12,6 @@ SEMXUSER = 2092103173
 
 client = TelegramClient('R5O60D', Apid, Apihash).start(bot_token=tken)
 
-# Load users from the text file
 def load_users():
     if not os.path.exists(USER_DATA_FILE):
         return {}
@@ -21,27 +19,23 @@ def load_users():
     with open(USER_DATA_FILE, 'r') as f:
         return {int(user_id): username for user_id, username in (line.strip().split(',') for line in f)}
 
-# Save users to the text file
 def save_users(users):
     with open(USER_DATA_FILE, 'w') as f:
         for user_id, username in users.items():
             f.write(f"{user_id},{username}\n")
 
-# Check if the user is authorized
 def is_authorized(user_id, users):
     return user_id in users
 
-users = load_users()
-
-@client.on(events.NewMessage(pattern=r'#b (\S+) (\d+) (\d+)'))
+@client.on(events.NewMessage(pattern=r'.b (\S+) (\d+) (\d+)'))
 async def handle_bgmi(event):
     user_id = event.sender_id
+    users = load_users()  # Reload user data
     if not is_authorized(user_id, users):
         await event.reply("**You are not authorized to use this command.**")
         return
 
     target, port, time_ = event.pattern_match.groups()
-
     buttons = [
         [Button.inline("Start", data=f'start_{target}_{port}_{time_}'),
          Button.inline("Stop", data=f'stop_{target}_{port}_{time_}')]
@@ -71,7 +65,7 @@ async def stop_bgmi(event):
     except Exception as e:
         await event.answer(f"Error: {str(e)}", alert=True)
 
-@client.on(events.NewMessage(pattern='/add'))
+@client.on(events.NewMessage(pattern='.add'))
 async def add(event):
     if event.sender_id != SEMXUSER:
         await event.reply("**You are not authorized to use this command.**")
@@ -83,13 +77,14 @@ async def add(event):
             user = await client.get_entity(Infouser)
             user_id = user.id
         
+        users = load_users()  # Reload user data
         users[user_id] = Infouser
         save_users(users)
         await event.reply(f"**Added {Infouser} to authorized users.**")
     except Exception as e:
         await event.reply(f"Error: {str(e)}")
 
-@client.on(events.NewMessage(pattern='/remove'))
+@client.on(events.NewMessage(pattern='.remove'))
 async def remove(event):
     if event.sender_id != SEMXUSER:
         await event.reply("**You are not authorized to use this command.**")
@@ -101,6 +96,7 @@ async def remove(event):
             user = await client.get_entity(Infouser)
             user_id = user.id
         
+        users = load_users()  # Reload user data
         if user_id in users:
             del users[user_id]
             save_users(users)
@@ -112,4 +108,3 @@ async def remove(event):
 
 client.start()
 client.run_until_disconnected()
-  
