@@ -57,7 +57,7 @@ async def handle_bgmi(event):
     
     await event.reply("Control BGMI execution:", buttons=buttons)
 
-@client.on(events.CallbackQuery(pattern=b'start_(\S+)_(\d+)_(\d+)'))
+@client.on(events.CallbackQuery(pattern=r'start_(\S+)_(\d+)_(\d+)'))
 async def start_bgmi(event):
     target, port, time = event.data.decode().split('_')[1:]
 
@@ -69,7 +69,7 @@ async def start_bgmi(event):
     except Exception as e:
         await event.answer(f"Error: {str(e)}", alert=True)
 
-@client.on(events.CallbackQuery(pattern=b'stop_(\S+)_(\d+)_(\d+)'))
+@client.on(events.CallbackQuery(pattern=r'stop_(\S+)_(\d+)_(\d+)'))
 async def stop_bgmi(event):
     target, port, time = event.data.decode().split('_')[1:]
 
@@ -80,6 +80,7 @@ async def stop_bgmi(event):
         await event.answer("BGMI process stopped.", alert=True)
     except Exception as e:
         await event.answer(f"Error: {str(e)}", alert=True)
+
 
 @client.on(events.NewMessage(pattern='/add'))
 async def add(event):
