@@ -10,7 +10,7 @@ Apihash = "819a20b5347be3a190163fff29d59d81"
 tken = "7483201528:AAGLZzUEMYYN-wYmYUUwD8eVOQyiflG8-d4"
 SEMXUSER = 2092103173
 
-client = TelegramClient('R5O60D', Apid, Apihash).start(bot_token=tken)
+client = TelegramClient('R5O060D', Apid, Apihash).start(bot_token=tken)
 
 def load_users():
     if not os.path.exists(USER_DATA_FILE):
