@@ -21,7 +21,7 @@ attack_process = None
 attack_info = {}  # Store attack info
 status_message_id = None  # To keep track of the status message ID
 
-@client.on(events.NewMessage(pattern='(?P<command>\d+\.\d+\.\d+\.\d+ \d+ \d+)'))
+@client.on(events.NewMessage(pattern=r'(?P<command>\d+\.\d+\.\d+\.\d+ \d+ \d+)'))
 async def handle_attack_command(event):
     global attack_info, status_message_id
     command_parts = event.raw_text.split()
