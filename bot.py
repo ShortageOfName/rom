@@ -28,7 +28,7 @@ def is_authorized(user_id, users):
     return user_id in users
 
 @client.on(events.NewMessage(pattern=r'.b (\S+) (\d+) (\d+)'))
-async def handle_bgmi(event):
+async def handle_soul(event):
     user_id = event.sender_id
     users = load_users()  # Reload user data
     if not is_authorized(user_id, users):
@@ -41,27 +41,27 @@ async def handle_bgmi(event):
          Button.inline("Stop", data=f'stop_{target}_{port}_{time_}')]
     ]
     
-    await event.reply("Control BGMI execution:", buttons=buttons)
+    await event.reply("Control SOUL execution:", buttons=buttons)
 
 @client.on(events.CallbackQuery(pattern=b'start_(\\S+)_(\\d+)_(\\d+)'))
-async def start_bgmi(event):
+async def start_soul(event):
     target, port, time_ = event.data.decode().split('_')[1:]
-    command = f'./bgmi {target} {port} {time_} 200'
+    command = f'./soul {target} {port} {time_}'
     
     try:
         subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        await event.answer("BGMI started.", alert=True)
+        await event.answer("SOUL started.", alert=True)
     except Exception as e:
         await event.answer(f"Error: {str(e)}", alert=True)
 
 @client.on(events.CallbackQuery(pattern=b'stop_(\\S+)_(\\d+)_(\\d+)'))
-async def stop_bgmi(event):
+async def stop_soul(event):
     target, port, time_ = event.data.decode().split('_')[1:]
-    command_pattern = f'./bgmi {target} {port} {time_} 200'
+    command_pattern = f'./soul {target} {port} {time_}'
     
     try:
         subprocess.Popen(f'pkill -f "{command_pattern}"', shell=True)
-        await event.answer("BGMI process stopped.", alert=True)
+        await event.answer("SOUL process stopped.", alert=True)
     except Exception as e:
         await event.answer(f"Error: {str(e)}", alert=True)
 
@@ -108,3 +108,4 @@ async def remove(event):
 
 client.start()
 client.run_until_disconnected()
+        
