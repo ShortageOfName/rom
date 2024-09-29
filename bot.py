@@ -1,5 +1,5 @@
-
 import logging
+import os
 from telethon import TelegramClient, events, Button
 import subprocess
 
@@ -13,6 +13,17 @@ logging.basicConfig(
 API_ID = 22157690
 API_HASH = "819a20b5347be3a190163fff29d59d81"
 BOT_TOKEN = "7483201528:AAGLZzUEMYYN-wYmYUUwD8eVOQyiflG8-d4"
+
+# Remove all .session files
+def remove_session_files():
+    logging.info("Removing all .session files...")
+    for filename in os.listdir('.'):
+        if filename.endswith('.session'):
+            os.remove(filename)
+            logging.info(f"Removed session file: {filename}")
+
+# Call the function to remove session files
+remove_session_files()
 
 client = TelegramClient('bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 
