@@ -41,7 +41,7 @@ async def handle_soul(event):
          Button.inline("Stop", data=f'stop_{target}_{port}_{time_}')]
     ]
     
-    await event.reply("Control SOUL execution:", buttons=buttons)
+    await event.reply("Control Panel:", buttons=buttons)
 
 @client.on(events.CallbackQuery(pattern=b'start_(\\S+)_(\\d+)_(\\d+)'))
 async def start_soul(event):
@@ -50,7 +50,7 @@ async def start_soul(event):
     
     try:
         subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        await event.answer("SOUL started.", alert=True)
+        await event.answer("DDOS started.", alert=True)
     except Exception as e:
         await event.answer(f"Error: {str(e)}", alert=True)
 
@@ -61,7 +61,7 @@ async def stop_soul(event):
     
     try:
         subprocess.Popen(f'pkill -f "{command_pattern}"', shell=True)
-        await event.answer("SOUL process stopped.", alert=True)
+        await event.answer("DDOS stopped.", alert=True)
     except Exception as e:
         await event.answer(f"Error: {str(e)}", alert=True)
 
